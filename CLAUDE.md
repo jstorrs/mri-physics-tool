@@ -9,10 +9,15 @@ MRI Physics Tool is a clinical MRI physics support application for testing and t
 ## Development Commands
 
 ```bash
-bun run dev      # Start development server with HMR
-bun run build    # TypeScript compile + Vite production build
-bun run lint     # Run ESLint
-bun run preview  # Preview production build locally
+make dev         # Start development server with HMR
+make build       # TypeScript compile + Vite production build
+make lint        # Run ESLint
+make preview     # Preview production build locally
+make install     # Install dependencies
+make clean       # Remove build artifacts
+make deploy      # Build and push to trigger GitHub Actions deploy
+make typecheck   # Run TypeScript type checking only
+make help        # Show all available targets
 ```
 
 ## Tech Stack
