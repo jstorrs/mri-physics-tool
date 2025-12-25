@@ -313,12 +313,12 @@ export default function EquipmentPage() {
             </FormControl>
             <TextField
               name="name"
-              label="Equipment Name"
+              label="Model Name"
               value={formData.name}
               onChange={handleChange}
               required
               fullWidth
-              placeholder="e.g., MRI Scanner 1"
+              placeholder="e.g., MAGNETOM Vida"
             />
             <TextField
               name="manufacturer"
@@ -331,12 +331,11 @@ export default function EquipmentPage() {
             />
             <TextField
               name="model"
-              label="Model"
+              label="Model Number"
               value={formData.model}
               onChange={handleChange}
-              required
               fullWidth
-              placeholder="e.g., MAGNETOM Vida"
+              placeholder="e.g., 12345"
             />
             <FormControl fullWidth>
               <InputLabel>Field Strength</InputLabel>
@@ -430,7 +429,7 @@ export default function EquipmentPage() {
           <Button
             onClick={handleSave}
             variant="contained"
-            disabled={!formData.name || !formData.locationId || !formData.manufacturer || !formData.model}
+            disabled={!formData.name || !formData.locationId || !formData.manufacturer}
           >
             Save
           </Button>

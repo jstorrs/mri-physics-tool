@@ -45,7 +45,7 @@ export interface Equipment {
   type: EquipmentType;
   name: string;
   manufacturer: string;
-  model: string;
+  model?: string;
   serialNumber?: string;
   fieldStrength?: string; // e.g., "1.5T", "3T"
   installDate?: Date;
