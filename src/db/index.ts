@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type {
+  Organization,
+  Site,
   Location,
   Equipment,
   SupportEvent,
@@ -8,6 +10,8 @@ import type {
 } from '../types';
 
 class MRIPhysicsDB extends Dexie {
+  organizations!: EntityTable<Organization, 'id'>;
+  sites!: EntityTable<Site, 'id'>;
   locations!: EntityTable<Location, 'id'>;
   equipment!: EntityTable<Equipment, 'id'>;
   events!: EntityTable<SupportEvent, 'id'>;
@@ -20,6 +24,16 @@ class MRIPhysicsDB extends Dexie {
     this.version(1).stores({
       locations: 'id, name, createdAt',
       equipment: 'id, locationId, name, manufacturer, model, status, createdAt',
+      events: 'id, equipmentId, locationId, type, status, scheduledDate, createdAt',
+      images: 'id, eventId, equipmentId, locationId, capturedAt, *tags',
+      timelines: 'id, eventId, createdAt',
+    });
+
+    this.version(2).stores({
+      organizations: 'id, name, createdAt',
+      sites: 'id, organizationId, name, createdAt',
+      locations: 'id, siteId, name, createdAt',
+      equipment: 'id, locationId, type, name, manufacturer, model, status, createdAt',
       events: 'id, equipmentId, locationId, type, status, scheduledDate, createdAt',
       images: 'id, eventId, equipmentId, locationId, capturedAt, *tags',
       timelines: 'id, eventId, createdAt',
@@ -57,4 +71,18 @@ export async function getImagesForTimeline(timelineId: string) {
   if (!timeline) return null;
   const images = await db.images.where('id').anyOf(timeline.imageIds).toArray();
   return { timeline, images };
+}
+
+export async function getOrganizationWithSites(organizationId: string) {
+  const organization = await db.organizations.get(organizationId);
+  if (!organization) return null;
+  const sites = await db.sites.where('organizationId').equals(organizationId).toArray();
+  return { organization, sites };
+}
+
+export async function getSiteWithLocations(siteId: string) {
+  const site = await db.sites.get(siteId);
+  if (!site) return null;
+  const locations = await db.locations.where('siteId').equals(siteId).toArray();
+  return { site, locations };
 }

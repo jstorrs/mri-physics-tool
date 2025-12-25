@@ -1,6 +1,31 @@
 // Core entity types for MRI Physics Tool
 
+export interface Organization {
+  id: string;
+  name: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Site {
+  id: string;
+  organizationId: string;
+  name: string;
+  address?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Location {
+  siteId?: string;
   id: string;
   name: string;
   address?: string;
@@ -12,9 +37,12 @@ export interface Location {
   updatedAt: Date;
 }
 
+export type EquipmentType = 'mri_scanner' | 'coil' | 'phantom' | 'workstation' | 'other';
+
 export interface Equipment {
   id: string;
   locationId: string;
+  type: EquipmentType;
   name: string;
   manufacturer: string;
   model: string;
@@ -88,6 +116,8 @@ export interface Timeline {
 }
 
 // Form types
+export type OrganizationFormData = Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>;
+export type SiteFormData = Omit<Site, 'id' | 'createdAt' | 'updatedAt'>;
 export type LocationFormData = Omit<Location, 'id' | 'createdAt' | 'updatedAt'>;
 export type EquipmentFormData = Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>;
 export type SupportEventFormData = Omit<SupportEvent, 'id' | 'createdAt' | 'updatedAt'>;

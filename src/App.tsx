@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
+import Organizations from './pages/Organizations';
+import Sites from './pages/Sites';
 import Locations from './pages/Locations';
 import Equipment from './pages/Equipment';
 import Events from './pages/Events';
@@ -37,6 +39,8 @@ function App() {
         <Routes>
           <Route path="/" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
+            <Route path="organizations" element={<Organizations />} />
+            <Route path="sites" element={<Sites />} />
             <Route path="locations" element={<Locations />} />
             <Route path="equipment" element={<Equipment />} />
             <Route path="events" element={<Events />} />

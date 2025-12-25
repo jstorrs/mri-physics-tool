@@ -19,6 +19,8 @@ import {
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
+  CorporateFare as OrganizationIcon,
+  Business as SiteIcon,
   LocationOn as LocationIcon,
   Science as EquipmentIcon,
   Event as EventIcon,
@@ -30,6 +32,8 @@ const drawerWidth = 240;
 
 const navItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { text: 'Organizations', icon: <OrganizationIcon />, path: '/organizations' },
+  { text: 'Sites', icon: <SiteIcon />, path: '/sites' },
   { text: 'Locations', icon: <LocationIcon />, path: '/locations' },
   { text: 'Equipment', icon: <EquipmentIcon />, path: '/equipment' },
   { text: 'Events', icon: <EventIcon />, path: '/events' },

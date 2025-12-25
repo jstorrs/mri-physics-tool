@@ -11,6 +11,8 @@ import {
   Chip,
 } from '@mui/material';
 import {
+  CorporateFare as OrganizationIcon,
+  Business as SiteIcon,
   LocationOn as LocationIcon,
   Science as EquipmentIcon,
   Event as EventIcon,
@@ -20,6 +22,8 @@ import { format } from 'date-fns';
 import { db } from '../db';
 
 export default function Dashboard() {
+  const organizations = useLiveQuery(() => db.organizations.count());
+  const sites = useLiveQuery(() => db.sites.count());
   const locations = useLiveQuery(() => db.locations.count());
   const equipment = useLiveQuery(() => db.equipment.count());
   const events = useLiveQuery(() => db.events.count());
@@ -43,6 +47,8 @@ export default function Dashboard() {
   );
 
   const stats = [
+    { label: 'Organizations', value: organizations ?? 0, icon: <OrganizationIcon fontSize="large" />, color: '#0d47a1' },
+    { label: 'Sites', value: sites ?? 0, icon: <SiteIcon fontSize="large" />, color: '#1565c0' },
     { label: 'Locations', value: locations ?? 0, icon: <LocationIcon fontSize="large" />, color: '#1976d2' },
     { label: 'Equipment', value: equipment ?? 0, icon: <EquipmentIcon fontSize="large" />, color: '#2e7d32' },
     { label: 'Events', value: events ?? 0, icon: <EventIcon fontSize="large" />, color: '#ed6c02' },
@@ -72,7 +78,7 @@ export default function Dashboard() {
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {stats.map((stat) => (
-          <Grid size={{ xs: 6, sm: 3 }} key={stat.label}>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }} key={stat.label}>
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Box sx={{ color: stat.color, mb: 1 }}>{stat.icon}</Box>

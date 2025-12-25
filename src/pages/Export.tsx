@@ -26,7 +26,7 @@ import { format } from 'date-fns';
 import { db } from '../db';
 
 type ExportFormat = 'json' | 'csv';
-type ExportScope = 'all' | 'locations' | 'equipment' | 'events' | 'images';
+type ExportScope = 'all' | 'organizations' | 'sites' | 'locations' | 'equipment' | 'events' | 'images';
 
 export default function Export() {
   const [format_, setFormat] = useState<ExportFormat>('json');
@@ -37,6 +37,8 @@ export default function Export() {
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const organizations = useLiveQuery(() => db.organizations.count());
+  const sites = useLiveQuery(() => db.sites.count());
   const locations = useLiveQuery(() => db.locations.count());
   const equipment = useLiveQuery(() => db.equipment.count());
   const events = useLiveQuery(() => db.events.count());
@@ -53,6 +55,14 @@ export default function Export() {
       if (dateTo && date > new Date(dateTo + 'T23:59:59')) return false;
       return true;
     };
+
+    if (scope === 'all' || scope === 'organizations') {
+      data.organizations = await db.organizations.toArray();
+    }
+
+    if (scope === 'all' || scope === 'sites') {
+      data.sites = await db.sites.toArray();
+    }
 
     if (scope === 'all' || scope === 'locations') {
       data.locations = await db.locations.toArray();
@@ -122,6 +132,16 @@ export default function Export() {
       );
       return [headers.join(','), ...rows].join('\n');
     };
+
+    if (scope === 'all' || scope === 'organizations') {
+      const orgs = await db.organizations.toArray();
+      csvFiles['organizations.csv'] = toCSV(orgs as unknown as Record<string, unknown>[]);
+    }
+
+    if (scope === 'all' || scope === 'sites') {
+      const siteList = await db.sites.toArray();
+      csvFiles['sites.csv'] = toCSV(siteList as unknown as Record<string, unknown>[]);
+    }
 
     if (scope === 'all' || scope === 'locations') {
       const locs = await db.locations.toArray();
@@ -210,10 +230,12 @@ export default function Export() {
     if (!confirm('Are you sure you want to delete ALL data? This cannot be undone!')) {
       return;
     }
-    if (!confirm('This will permanently delete all locations, equipment, events, and images. Continue?')) {
+    if (!confirm('This will permanently delete all organizations, sites, locations, equipment, events, and images. Continue?')) {
       return;
     }
 
+    await db.organizations.clear();
+    await db.sites.clear();
     await db.locations.clear();
     await db.equipment.clear();
     await db.events.clear();
@@ -264,6 +286,8 @@ export default function Export() {
                       onChange={(e) => setScope(e.target.value as ExportScope)}
                     >
                       <MenuItem value="all">All Data</MenuItem>
+                      <MenuItem value="organizations">Organizations Only</MenuItem>
+                      <MenuItem value="sites">Sites Only</MenuItem>
                       <MenuItem value="locations">Locations Only</MenuItem>
                       <MenuItem value="equipment">Equipment Only</MenuItem>
                       <MenuItem value="events">Events Only</MenuItem>
@@ -333,6 +357,8 @@ export default function Export() {
                 Data Summary
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography variant="body2">Organizations: {organizations ?? 0}</Typography>
+                <Typography variant="body2">Sites: {sites ?? 0}</Typography>
                 <Typography variant="body2">Locations: {locations ?? 0}</Typography>
                 <Typography variant="body2">Equipment: {equipment ?? 0}</Typography>
                 <Typography variant="body2">Events: {events ?? 0}</Typography>

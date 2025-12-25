@@ -31,10 +31,11 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { db } from '../db';
-import type { Equipment, EquipmentFormData } from '../types';
+import type { Equipment, EquipmentFormData, EquipmentType } from '../types';
 
 const emptyForm: EquipmentFormData = {
   locationId: '',
+  type: 'mri_scanner',
   name: '',
   manufacturer: '',
   model: '',
@@ -51,6 +52,14 @@ const statusOptions = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
   { value: 'decommissioned', label: 'Decommissioned' },
+];
+
+const typeOptions: { value: EquipmentType; label: string }[] = [
+  { value: 'mri_scanner', label: 'MRI Scanner' },
+  { value: 'coil', label: 'Coil' },
+  { value: 'phantom', label: 'Phantom' },
+  { value: 'workstation', label: 'Workstation' },
+  { value: 'other', label: 'Other' },
 ];
 
 const fieldStrengthOptions = ['1.5T', '3T', '7T', '0.5T', '1.0T', 'Other'];
@@ -87,11 +96,16 @@ export default function EquipmentPage() {
     return locations?.find((l) => l.id === locationId)?.name || 'Unknown';
   };
 
+  const getTypeName = (type: EquipmentType) => {
+    return typeOptions.find((t) => t.value === type)?.label || type;
+  };
+
   const handleOpen = (item?: Equipment) => {
     if (item) {
       setEditingId(item.id);
       setFormData({
         locationId: item.locationId,
+        type: item.type || 'mri_scanner',
         name: item.name,
         manufacturer: item.manufacturer,
         model: item.model,
@@ -209,6 +223,12 @@ export default function EquipmentPage() {
                     color={getStatusColor(item.status)}
                   />
                 </Box>
+                <Chip
+                  label={getTypeName(item.type || 'mri_scanner')}
+                  size="small"
+                  variant="outlined"
+                  sx={{ mb: 1 }}
+                />
                 <Typography variant="body2" color="text.secondary">
                   {item.manufacturer} {item.model}
                 </Typography>
@@ -272,6 +292,21 @@ export default function EquipmentPage() {
                 {locations?.map((loc) => (
                   <MenuItem key={loc.id} value={loc.id}>
                     {loc.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth required>
+              <InputLabel>Equipment Type</InputLabel>
+              <Select
+                name="type"
+                value={formData.type}
+                label="Equipment Type"
+                onChange={(e) => handleChange(e as React.ChangeEvent<HTMLInputElement>)}
+              >
+                {typeOptions.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    {opt.label}
                   </MenuItem>
                 ))}
               </Select>
