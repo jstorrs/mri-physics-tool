@@ -1,0 +1,103 @@
+// Core entity types for MRI Physics Tool
+
+export interface Location {
+  id: string;
+  name: string;
+  address?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Equipment {
+  id: string;
+  locationId: string;
+  name: string;
+  manufacturer: string;
+  model: string;
+  serialNumber?: string;
+  fieldStrength?: string; // e.g., "1.5T", "3T"
+  installDate?: Date;
+  softwareVersion?: string;
+  serviceContractExpiry?: Date;
+  status: 'active' | 'inactive' | 'decommissioned';
+  customFields?: Record<string, string>;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type EventType =
+  | 'acr_test'
+  | 'qc_check'
+  | 'acceptance_test'
+  | 'annual_survey'
+  | 'repair'
+  | 'calibration'
+  | 'incident'
+  | 'service_call'
+  | 'consultation'
+  | 'other';
+
+export type EventStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface SupportEvent {
+  id: string;
+  equipmentId: string;
+  locationId: string;
+  type: EventType;
+  status: EventStatus;
+  title: string;
+  description?: string;
+  scheduledDate?: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  findings?: string;
+  recommendations?: string;
+  customFields?: Record<string, string>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GalleryImage {
+  id: string;
+  eventId?: string;
+  equipmentId?: string;
+  locationId?: string;
+  filename: string;
+  mimeType: string;
+  blob: Blob;
+  thumbnailBlob?: Blob;
+  caption?: string;
+  tags?: string[];
+  capturedAt: Date;
+  createdAt: Date;
+}
+
+export interface Timeline {
+  id: string;
+  eventId: string;
+  name: string;
+  description?: string;
+  imageIds: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Form types
+export type LocationFormData = Omit<Location, 'id' | 'createdAt' | 'updatedAt'>;
+export type EquipmentFormData = Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>;
+export type SupportEventFormData = Omit<SupportEvent, 'id' | 'createdAt' | 'updatedAt'>;
+
+// Export types
+export interface ExportOptions {
+  format: 'json' | 'csv';
+  includeImages: boolean;
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+}
