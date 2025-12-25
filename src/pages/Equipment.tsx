@@ -312,15 +312,6 @@ export default function EquipmentPage() {
               </Select>
             </FormControl>
             <TextField
-              name="name"
-              label="Model Name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              fullWidth
-              placeholder="e.g., MAGNETOM Vida"
-            />
-            <TextField
               name="manufacturer"
               label="Manufacturer"
               value={formData.manufacturer}
@@ -328,6 +319,15 @@ export default function EquipmentPage() {
               required
               fullWidth
               placeholder="e.g., Siemens, GE, Philips"
+            />
+            <TextField
+              name="name"
+              label="Model Name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              fullWidth
+              placeholder="e.g., MAGNETOM Vida"
             />
             <TextField
               name="model"
