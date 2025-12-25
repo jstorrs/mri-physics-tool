@@ -1,14 +1,22 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
+  Button,
   Card,
+  CardActionArea,
   CardContent,
-  Grid,
-  Typography,
+  Breadcrumbs,
+  Link,
   List,
   ListItem,
+  ListItemButton,
+  ListItemIcon,
   ListItemText,
+  Typography,
   Chip,
+  Divider,
 } from '@mui/material';
 import {
   CorporateFare as OrganizationIcon,
@@ -16,141 +24,351 @@ import {
   LocationOn as LocationIcon,
   Science as EquipmentIcon,
   Event as EventIcon,
-  PhotoLibrary as GalleryIcon,
+  PhotoCamera as CameraIcon,
+  ChevronRight as ChevronRightIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { db } from '../db';
+import type { Organization, Site, Location as LocationType } from '../types';
 
 export default function Dashboard() {
-  const organizations = useLiveQuery(() => db.organizations.count());
-  const sites = useLiveQuery(() => db.sites.count());
-  const locations = useLiveQuery(() => db.locations.count());
-  const equipment = useLiveQuery(() => db.equipment.count());
-  const events = useLiveQuery(() => db.events.count());
-  const images = useLiveQuery(() => db.images.count());
+  const navigate = useNavigate();
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+  const [selectedSite, setSelectedSite] = useState<Site | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(null);
 
-  const recentEvents = useLiveQuery(() =>
-    db.events.orderBy('createdAt').reverse().limit(5).toArray()
+  const organizations = useLiveQuery(() => db.organizations.orderBy('name').toArray());
+
+  const sites = useLiveQuery(
+    () => selectedOrg
+      ? db.sites.where('organizationId').equals(selectedOrg.id).sortBy('name')
+      : Promise.resolve([] as Site[]),
+    [selectedOrg]
   );
 
-  const upcomingEvents = useLiveQuery(() =>
-    db.events
-      .where('status')
-      .equals('scheduled')
-      .toArray()
-      .then((events) =>
-        events
-          .filter((e) => e.scheduledDate && e.scheduledDate >= new Date())
-          .sort((a, b) => (a.scheduledDate?.getTime() || 0) - (b.scheduledDate?.getTime() || 0))
-          .slice(0, 5)
-      )
+  const locations = useLiveQuery(
+    () => selectedSite
+      ? db.locations.where('siteId').equals(selectedSite.id).sortBy('name')
+      : Promise.resolve([] as LocationType[]),
+    [selectedSite]
   );
 
-  const stats = [
-    { label: 'Organizations', value: organizations ?? 0, icon: <OrganizationIcon fontSize="large" />, color: '#0d47a1' },
-    { label: 'Sites', value: sites ?? 0, icon: <SiteIcon fontSize="large" />, color: '#1565c0' },
-    { label: 'Locations', value: locations ?? 0, icon: <LocationIcon fontSize="large" />, color: '#1976d2' },
-    { label: 'Equipment', value: equipment ?? 0, icon: <EquipmentIcon fontSize="large" />, color: '#2e7d32' },
-    { label: 'Events', value: events ?? 0, icon: <EventIcon fontSize="large" />, color: '#ed6c02' },
-    { label: 'Images', value: images ?? 0, icon: <GalleryIcon fontSize="large" />, color: '#9c27b0' },
-  ];
+  const equipmentCount = useLiveQuery(
+    () => selectedLocation
+      ? db.equipment.where('locationId').equals(selectedLocation.id).count()
+      : Promise.resolve(0),
+    [selectedLocation]
+  );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'success';
-      case 'in_progress':
-        return 'warning';
-      case 'scheduled':
-        return 'info';
-      case 'cancelled':
-        return 'error';
-      default:
-        return 'default';
+  const handleOrgClick = (org: Organization) => {
+    setSelectedOrg(org);
+    setSelectedSite(null);
+    setSelectedLocation(null);
+  };
+
+  const handleSiteClick = (site: Site) => {
+    setSelectedSite(site);
+    setSelectedLocation(null);
+  };
+
+  const handleLocationClick = (location: LocationType) => {
+    setSelectedLocation(location);
+  };
+
+  const handleBreadcrumbClick = (level: 'root' | 'org' | 'site') => {
+    if (level === 'root') {
+      setSelectedOrg(null);
+      setSelectedSite(null);
+      setSelectedLocation(null);
+    } else if (level === 'org') {
+      setSelectedSite(null);
+      setSelectedLocation(null);
+    } else if (level === 'site') {
+      setSelectedLocation(null);
     }
   };
 
+  // Render breadcrumbs
+  const renderBreadcrumbs = () => (
+    <Breadcrumbs sx={{ mb: 2 }}>
+      <Link
+        component="button"
+        variant="body1"
+        onClick={() => handleBreadcrumbClick('root')}
+        underline="hover"
+        color={selectedOrg ? 'inherit' : 'text.primary'}
+        sx={{ cursor: 'pointer' }}
+      >
+        Organizations
+      </Link>
+      {selectedOrg && (
+        <Link
+          component="button"
+          variant="body1"
+          onClick={() => handleBreadcrumbClick('org')}
+          underline="hover"
+          color={selectedSite ? 'inherit' : 'text.primary'}
+          sx={{ cursor: 'pointer' }}
+        >
+          {selectedOrg.name}
+        </Link>
+      )}
+      {selectedSite && (
+        <Link
+          component="button"
+          variant="body1"
+          onClick={() => handleBreadcrumbClick('site')}
+          underline="hover"
+          color={selectedLocation ? 'inherit' : 'text.primary'}
+          sx={{ cursor: 'pointer' }}
+        >
+          {selectedSite.name}
+        </Link>
+      )}
+      {selectedLocation && (
+        <Typography color="text.primary">{selectedLocation.name}</Typography>
+      )}
+    </Breadcrumbs>
+  );
+
+  // Render organization list
+  const renderOrganizations = () => (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5">Select Organization</Typography>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/organizations')}
+          size="small"
+        >
+          Manage
+        </Button>
+      </Box>
+      {organizations && organizations.length > 0 ? (
+        <List>
+          {organizations.map((org) => (
+            <ListItem key={org.id} disablePadding>
+              <ListItemButton onClick={() => handleOrgClick(org)}>
+                <ListItemIcon>
+                  <OrganizationIcon color="primary" />
+                </ListItemIcon>
+                <ListItemText
+                  primary={org.name}
+                  secondary={org.contactName}
+                />
+                <ChevronRightIcon color="action" />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      ) : (
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 4 }}>
+            <OrganizationIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>No organizations yet</Typography>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              Start by creating your first organization
+            </Typography>
+            <Button variant="contained" onClick={() => navigate('/organizations')}>
+              Add Organization
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </Box>
+  );
+
+  // Render site list
+  const renderSites = () => (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5">Select Site</Typography>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() => navigate(`/sites?organization=${selectedOrg?.id}`)}
+          size="small"
+        >
+          Manage
+        </Button>
+      </Box>
+      {sites && sites.length > 0 ? (
+        <List>
+          {sites.map((site) => (
+            <ListItem key={site.id} disablePadding>
+              <ListItemButton onClick={() => handleSiteClick(site)}>
+                <ListItemIcon>
+                  <SiteIcon color="primary" />
+                </ListItemIcon>
+                <ListItemText
+                  primary={site.name}
+                  secondary={site.address}
+                />
+                <ChevronRightIcon color="action" />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      ) : (
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 4 }}>
+            <SiteIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>No sites yet</Typography>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              Add sites to {selectedOrg?.name}
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => navigate(`/sites?organization=${selectedOrg?.id}`)}
+            >
+              Add Site
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </Box>
+  );
+
+  // Render location list
+  const renderLocations = () => (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5">Select Location</Typography>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() => navigate(`/locations?site=${selectedSite?.id}`)}
+          size="small"
+        >
+          Manage
+        </Button>
+      </Box>
+      {locations && locations.length > 0 ? (
+        <List>
+          {locations.map((location) => (
+            <ListItem key={location.id} disablePadding>
+              <ListItemButton onClick={() => handleLocationClick(location)}>
+                <ListItemIcon>
+                  <LocationIcon color="primary" />
+                </ListItemIcon>
+                <ListItemText
+                  primary={location.name}
+                  secondary={location.address}
+                />
+                <ChevronRightIcon color="action" />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      ) : (
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 4 }}>
+            <LocationIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>No locations yet</Typography>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              Add scanner locations to {selectedSite?.name}
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => navigate(`/locations?site=${selectedSite?.id}`)}
+            >
+              Add Location
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </Box>
+  );
+
+  // Render quick actions for selected location
+  const renderQuickActions = () => (
+    <Box>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" gutterBottom>{selectedLocation?.name}</Typography>
+        {selectedLocation?.address && (
+          <Typography color="text.secondary">{selectedLocation.address}</Typography>
+        )}
+        <Chip
+          icon={<EquipmentIcon />}
+          label={`${equipmentCount ?? 0} Equipment`}
+          size="small"
+          sx={{ mt: 1 }}
+        />
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
+
+      <Typography variant="h6" gutterBottom>Quick Actions</Typography>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Card>
+          <CardActionArea onClick={() => navigate(`/equipment?location=${selectedLocation?.id}`)}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <EquipmentIcon color="success" sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h6">View Equipment</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  See all equipment at this location
+                </Typography>
+              </Box>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+
+        <Card>
+          <CardActionArea onClick={() => navigate(`/events?location=${selectedLocation?.id}`)}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <EventIcon color="warning" sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h6">View Events</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  See service events for this location
+                </Typography>
+              </Box>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+
+        <Card>
+          <CardActionArea onClick={() => navigate(`/events?location=${selectedLocation?.id}&action=new`)}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <AddIcon color="primary" sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h6">New Event</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Create a new service event
+                </Typography>
+              </Box>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+
+        <Card>
+          <CardActionArea onClick={() => navigate(`/gallery?location=${selectedLocation?.id}`)}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CameraIcon color="secondary" sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h6">Take Photo</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Capture images for this location
+                </Typography>
+              </Box>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+      </Box>
+    </Box>
+  );
+
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
+      {renderBreadcrumbs()}
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {stats.map((stat) => (
-          <Grid size={{ xs: 6, sm: 4, md: 2 }} key={stat.label}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Box sx={{ color: stat.color, mb: 1 }}>{stat.icon}</Box>
-                <Typography variant="h4" component="div">
-                  {stat.value}
-                </Typography>
-                <Typography color="text.secondary">{stat.label}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Activity
-              </Typography>
-              {recentEvents && recentEvents.length > 0 ? (
-                <List dense>
-                  {recentEvents.map((event) => (
-                    <ListItem key={event.id}>
-                      <ListItemText
-                        primary={event.title}
-                        secondary={format(event.createdAt, 'MMM d, yyyy')}
-                      />
-                      <Chip
-                        label={event.status.replace('_', ' ')}
-                        size="small"
-                        color={getStatusColor(event.status)}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Typography color="text.secondary">No recent activity</Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Upcoming Events
-              </Typography>
-              {upcomingEvents && upcomingEvents.length > 0 ? (
-                <List dense>
-                  {upcomingEvents.map((event) => (
-                    <ListItem key={event.id}>
-                      <ListItemText
-                        primary={event.title}
-                        secondary={
-                          event.scheduledDate
-                            ? format(event.scheduledDate, 'MMM d, yyyy')
-                            : 'No date'
-                        }
-                      />
-                      <Chip label={event.type.replace('_', ' ')} size="small" variant="outlined" />
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Typography color="text.secondary">No upcoming events</Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {!selectedOrg && renderOrganizations()}
+      {selectedOrg && !selectedSite && renderSites()}
+      {selectedSite && !selectedLocation && renderLocations()}
+      {selectedLocation && renderQuickActions()}
     </Box>
   );
 }

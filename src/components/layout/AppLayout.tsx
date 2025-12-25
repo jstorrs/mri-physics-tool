@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Dashboard as DashboardIcon,
+  Home as HomeIcon,
   CorporateFare as OrganizationIcon,
   Business as SiteIcon,
   LocationOn as LocationIcon,
@@ -31,7 +31,7 @@ import {
 const drawerWidth = 240;
 
 const navItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { text: 'Home', icon: <HomeIcon />, path: '/' },
   { text: 'Organizations', icon: <OrganizationIcon />, path: '/organizations' },
   { text: 'Sites', icon: <SiteIcon />, path: '/sites' },
   { text: 'Locations', icon: <LocationIcon />, path: '/locations' },
