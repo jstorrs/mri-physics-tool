@@ -1,73 +1,62 @@
-# React + TypeScript + Vite
+# MRI Physics Tool
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A clinical MRI physics support application for testing and tracking. Built as a Progressive Web App (PWA) with offline-first data storage.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Hierarchical Organization**: Manage organizations, sites, locations, and equipment
+- **Service Event Tracking**: Log ACR tests, QC checks, repairs, and other service events
+- **Image Gallery**: Attach photos to events, equipment, and locations
+- **Offline Support**: Full functionality without internet connection using IndexedDB
+- **Drill-Down Navigation**: Quick access to locations with browser back/forward support
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+make install
 
-## Expanding the ESLint configuration
+# Start development server
+make dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production
+make build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Development Commands
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Command | Description |
+|---------|-------------|
+| `make dev` | Start development server with HMR |
+| `make build` | TypeScript compile + Vite production build |
+| `make lint` | Run ESLint |
+| `make typecheck` | Run TypeScript type checking |
+| `make preview` | Preview production build locally |
+| `make clean` | Remove build artifacts |
+| `make deploy` | Build and push to trigger GitHub Actions deploy |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Tech Stack
+
+- **React 19** with TypeScript
+- **Vite** for build tooling
+- **Material-UI (MUI)** for components and theming
+- **Dexie** for IndexedDB with reactive queries
+- **React Router** for navigation
+- **Vite PWA Plugin** for offline support
+
+## Data Model
+
 ```
+Organization → Site → Location → Equipment → Events → Images
+```
+
+- **Organization**: Hospital networks (top level)
+- **Site**: Individual hospitals/buildings
+- **Location**: Scanner rooms (one MRI scanner per location)
+- **Equipment**: MRI scanners, coils, phantoms, workstations
+- **Events**: Service events (ACR tests, QC checks, repairs, etc.)
+- **Images**: Photos linked to events/equipment/locations
+
+## Deployment
+
+Pushes to `main` automatically deploy to GitHub Pages via GitHub Actions.

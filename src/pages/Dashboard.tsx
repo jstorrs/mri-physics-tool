@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -33,58 +32,71 @@ import type { Organization, Site, Location as LocationType } from '../types';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
-  const [selectedSite, setSelectedSite] = useState<Site | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read IDs from URL
+  const orgId = searchParams.get('org');
+  const siteId = searchParams.get('site');
+  const locationId = searchParams.get('location');
 
   const organizations = useLiveQuery(() => db.organizations.orderBy('name').toArray());
 
+  // Fetch selected entities based on URL params
+  const selectedOrg = useLiveQuery(
+    () => orgId ? db.organizations.get(Number(orgId)) : Promise.resolve(undefined),
+    [orgId]
+  );
+
+  const selectedSite = useLiveQuery(
+    () => siteId ? db.sites.get(Number(siteId)) : Promise.resolve(undefined),
+    [siteId]
+  );
+
+  const selectedLocation = useLiveQuery(
+    () => locationId ? db.locations.get(Number(locationId)) : Promise.resolve(undefined),
+    [locationId]
+  );
+
   const sites = useLiveQuery(
-    () => selectedOrg
-      ? db.sites.where('organizationId').equals(selectedOrg.id).sortBy('name')
+    () => orgId
+      ? db.sites.where('organizationId').equals(Number(orgId)).sortBy('name')
       : Promise.resolve([] as Site[]),
-    [selectedOrg]
+    [orgId]
   );
 
   const locations = useLiveQuery(
-    () => selectedSite
-      ? db.locations.where('siteId').equals(selectedSite.id).sortBy('name')
+    () => siteId
+      ? db.locations.where('siteId').equals(Number(siteId)).sortBy('name')
       : Promise.resolve([] as LocationType[]),
-    [selectedSite]
+    [siteId]
   );
 
   const equipmentCount = useLiveQuery(
-    () => selectedLocation
-      ? db.equipment.where('locationId').equals(selectedLocation.id).count()
+    () => locationId
+      ? db.equipment.where('locationId').equals(Number(locationId)).count()
       : Promise.resolve(0),
-    [selectedLocation]
+    [locationId]
   );
 
   const handleOrgClick = (org: Organization) => {
-    setSelectedOrg(org);
-    setSelectedSite(null);
-    setSelectedLocation(null);
+    setSearchParams({ org: String(org.id) });
   };
 
   const handleSiteClick = (site: Site) => {
-    setSelectedSite(site);
-    setSelectedLocation(null);
+    setSearchParams({ org: orgId!, site: String(site.id) });
   };
 
   const handleLocationClick = (location: LocationType) => {
-    setSelectedLocation(location);
+    setSearchParams({ org: orgId!, site: siteId!, location: String(location.id) });
   };
 
   const handleBreadcrumbClick = (level: 'root' | 'org' | 'site') => {
     if (level === 'root') {
-      setSelectedOrg(null);
-      setSelectedSite(null);
-      setSelectedLocation(null);
+      setSearchParams({});
     } else if (level === 'org') {
-      setSelectedSite(null);
-      setSelectedLocation(null);
+      setSearchParams({ org: orgId! });
     } else if (level === 'site') {
-      setSelectedLocation(null);
+      setSearchParams({ org: orgId!, site: siteId! });
     }
   };
 
@@ -365,10 +377,10 @@ export default function Dashboard() {
     <Box>
       {renderBreadcrumbs()}
 
-      {!selectedOrg && renderOrganizations()}
-      {selectedOrg && !selectedSite && renderSites()}
-      {selectedSite && !selectedLocation && renderLocations()}
-      {selectedLocation && renderQuickActions()}
+      {!orgId && renderOrganizations()}
+      {orgId && !siteId && renderSites()}
+      {siteId && !locationId && renderLocations()}
+      {locationId && renderQuickActions()}
     </Box>
   );
 }
