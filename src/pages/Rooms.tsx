@@ -1,16 +1,17 @@
 import { useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { v4 as uuidv4 } from 'uuid';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as ContextMenu from '@radix-ui/react-context-menu';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { db } from '../db';
-import type { Organization, OrganizationFormData } from '../types';
+import type { Room, RoomFormData } from '../types';
 
-const emptyForm: OrganizationFormData = {
+const emptyForm: RoomFormData = {
+  siteId: '',
   name: '',
-  shortName: '',
+  address: '',
   contactName: '',
   contactPhone: '',
   contactEmail: '',
@@ -19,26 +20,33 @@ const emptyForm: OrganizationFormData = {
 
 const LONG_PRESS_DURATION = 500;
 
-export default function Organizations() {
+export default function Rooms() {
   const navigate = useNavigate();
+  const { orgId, siteId } = useParams<{ orgId: string; siteId: string }>();
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<OrganizationFormData>(emptyForm);
+  const [formData, setFormData] = useState<RoomFormData>(emptyForm);
 
   // Delete confirmation state
-  const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Room | null>(null);
 
-  // Long-press handling for mobile
+  // Long-press handling
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-  const [contextMenuOrg, setContextMenuOrg] = useState<Organization | null>(null);
+  const [contextMenuRoom, setContextMenuRoom] = useState<Room | null>(null);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
 
   // Data
-  const organizations = useLiveQuery(
-    () => db.organizations.orderBy('name').toArray()
+  const site = useLiveQuery(
+    () => siteId ? db.sites.get(siteId) : undefined,
+    [siteId]
+  );
+
+  const rooms = useLiveQuery(
+    () => siteId ? db.rooms.where('siteId').equals(siteId).sortBy('name') : [],
+    [siteId]
   );
 
   // Clear long-press timer
@@ -49,13 +57,13 @@ export default function Organizations() {
     }
   }, []);
 
-  // Touch handlers for long-press context menu
-  const handleTouchStart = (e: React.TouchEvent, org: Organization) => {
+  // Touch handlers
+  const handleTouchStart = (e: React.TouchEvent, room: Room) => {
     const touch = e.touches[0];
     touchStartPos.current = { x: touch.clientX, y: touch.clientY };
 
     longPressTimer.current = setTimeout(() => {
-      setContextMenuOrg(org);
+      setContextMenuRoom(room);
       setContextMenuPos({ x: touch.clientX, y: touch.clientY });
     }, LONG_PRESS_DURATION);
   };
@@ -77,42 +85,48 @@ export default function Organizations() {
   };
 
   // Navigation
-  const handleItemClick = (org: Organization) => {
-    // Don't navigate if we just finished a long-press
-    if (contextMenuOrg) return;
-    navigate(`/organizations/${org.id}/sites`);
+  const handleBack = () => {
+    navigate(`/organizations/${orgId}/sites`);
+  };
+
+  const handleItemClick = (room: Room) => {
+    if (contextMenuRoom) return;
+    // TODO: Navigate to room detail / equipment list
+    // navigate(`/organizations/${orgId}/sites/${siteId}/rooms/${room.id}`);
+    console.log('Room clicked:', room.name);
   };
 
   // Dialog handlers
   const openAddDialog = () => {
     setEditingId(null);
-    setFormData(emptyForm);
+    setFormData({ ...emptyForm, siteId: siteId || '' });
     setDialogOpen(true);
   };
 
-  const openEditDialog = (org: Organization) => {
-    setEditingId(org.id);
+  const openEditDialog = (room: Room) => {
+    setEditingId(room.id);
     setFormData({
-      name: org.name,
-      shortName: org.shortName || '',
-      contactName: org.contactName || '',
-      contactPhone: org.contactPhone || '',
-      contactEmail: org.contactEmail || '',
-      notes: org.notes || '',
+      siteId: room.siteId,
+      name: room.name,
+      address: room.address || '',
+      contactName: room.contactName || '',
+      contactPhone: room.contactPhone || '',
+      contactEmail: room.contactEmail || '',
+      notes: room.notes || '',
     });
     setDialogOpen(true);
-    setContextMenuOrg(null);
+    setContextMenuRoom(null);
   };
 
   const handleSave = async () => {
     const now = new Date();
     if (editingId) {
-      await db.organizations.update(editingId, {
+      await db.rooms.update(editingId, {
         ...formData,
         updatedAt: now,
       });
     } else {
-      await db.organizations.add({
+      await db.rooms.add({
         id: uuidv4(),
         ...formData,
         createdAt: now,
@@ -123,26 +137,19 @@ export default function Organizations() {
   };
 
   // Delete handlers
-  const handleDeleteClick = (org: Organization) => {
-    setDeleteTarget(org);
-    setContextMenuOrg(null);
+  const handleDeleteClick = (room: Room) => {
+    setDeleteTarget(room);
+    setContextMenuRoom(null);
   };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
 
-    // Cascade delete: sites, rooms, equipment, events, images
-    const sites = await db.sites.where('organizationId').equals(deleteTarget.id).toArray();
-    const siteIds = sites.map(s => s.id);
-    const rooms = await db.rooms.where('siteId').anyOf(siteIds).toArray();
-    const roomIds = rooms.map(r => r.id);
-
-    await db.images.where('roomId').anyOf(roomIds).delete();
-    await db.events.where('roomId').anyOf(roomIds).delete();
-    await db.equipment.where('roomId').anyOf(roomIds).delete();
-    await db.rooms.where('siteId').anyOf(siteIds).delete();
-    await db.sites.where('organizationId').equals(deleteTarget.id).delete();
-    await db.organizations.delete(deleteTarget.id);
+    // Cascade delete
+    await db.images.where('roomId').equals(deleteTarget.id).delete();
+    await db.events.where('roomId').equals(deleteTarget.id).delete();
+    await db.equipment.where('roomId').equals(deleteTarget.id).delete();
+    await db.rooms.delete(deleteTarget.id);
 
     setDeleteTarget(null);
   };
@@ -152,31 +159,31 @@ export default function Organizations() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const displayName = (org: Organization) => org.shortName || org.name;
+  const headerTitle = site?.name || 'Rooms';
 
   return (
     <>
       {/* Header */}
       <header className="drill-header">
-        <div className="drill-header__back" style={{ visibility: 'hidden' }}>
-          {/* No back button at root level */}
-        </div>
-        <h1 className="drill-header__title">Organizations</h1>
+        <button className="drill-header__back" onClick={handleBack}>
+          ‹
+        </button>
+        <h1 className="drill-header__title">{headerTitle}</h1>
       </header>
 
       {/* List */}
       <div className="drill-list">
-        {organizations?.map(org => (
-          <ContextMenu.Root key={org.id}>
+        {rooms?.map(room => (
+          <ContextMenu.Root key={room.id}>
             <ContextMenu.Trigger asChild>
               <div
                 className="drill-item"
-                onClick={() => handleItemClick(org)}
-                onTouchStart={e => handleTouchStart(e, org)}
+                onClick={() => handleItemClick(room)}
+                onTouchStart={e => handleTouchStart(e, room)}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
-                <span className="drill-item__text">{displayName(org)}</span>
+                <span className="drill-item__text">{room.name}</span>
                 <span className="drill-item__chevron">›</span>
               </div>
             </ContextMenu.Trigger>
@@ -185,7 +192,7 @@ export default function Organizations() {
               <ContextMenu.Content className="context-menu-content">
                 <ContextMenu.Item
                   className="context-menu-item"
-                  onSelect={() => openEditDialog(org)}
+                  onSelect={() => openEditDialog(room)}
                 >
                   Edit
                 </ContextMenu.Item>
@@ -197,7 +204,7 @@ export default function Organizations() {
                 </ContextMenu.Item>
                 <ContextMenu.Item
                   className="context-menu-item context-menu-item--danger"
-                  onSelect={() => handleDeleteClick(org)}
+                  onSelect={() => handleDeleteClick(room)}
                 >
                   Delete
                 </ContextMenu.Item>
@@ -206,17 +213,14 @@ export default function Organizations() {
           </ContextMenu.Root>
         ))}
 
-        {/* Add Organization */}
-        <div
-          className="drill-item drill-item--add"
-          onClick={openAddDialog}
-        >
-          <span className="drill-item__text">+ Add Organization</span>
+        {/* Add Room */}
+        <div className="drill-item drill-item--add" onClick={openAddDialog}>
+          <span className="drill-item__text">+ Add Room</span>
         </div>
       </div>
 
-      {/* Mobile long-press context menu (fallback) */}
-      {contextMenuOrg && (
+      {/* Mobile long-press context menu */}
+      {contextMenuRoom && (
         <div
           className="context-menu-content"
           style={{
@@ -225,28 +229,19 @@ export default function Organizations() {
             left: contextMenuPos.x,
           }}
         >
-          <div
-            className="context-menu-item"
-            onClick={() => openEditDialog(contextMenuOrg)}
-          >
+          <div className="context-menu-item" onClick={() => openEditDialog(contextMenuRoom)}>
             Edit
           </div>
-          <div
-            className="context-menu-item"
-            onClick={() => {/* TODO: Export */}}
-          >
+          <div className="context-menu-item" onClick={() => {/* TODO: Export */}}>
             Export
           </div>
           <div
             className="context-menu-item context-menu-item--danger"
-            onClick={() => handleDeleteClick(contextMenuOrg)}
+            onClick={() => handleDeleteClick(contextMenuRoom)}
           >
             Delete
           </div>
-          <div
-            className="context-menu-item"
-            onClick={() => setContextMenuOrg(null)}
-          >
+          <div className="context-menu-item" onClick={() => setContextMenuRoom(null)}>
             Cancel
           </div>
         </div>
@@ -258,12 +253,12 @@ export default function Organizations() {
           <Dialog.Overlay className="dialog-overlay" />
           <Dialog.Content className="dialog-content">
             <Dialog.Title className="dialog-title">
-              {editingId ? 'Edit Organization' : 'Add Organization'}
+              {editingId ? 'Edit Room' : 'Add Room'}
             </Dialog.Title>
 
             <div className="form-group">
               <label className="form-label" htmlFor="name">
-                Organization Name *
+                Room Name *
               </label>
               <input
                 id="name"
@@ -271,21 +266,23 @@ export default function Organizations() {
                 className="form-input"
                 value={formData.name}
                 onChange={handleChange}
+                placeholder="e.g., MRI Room 1, Scanner Bay A"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="shortName">
-                Short Name (for lists)
+              <label className="form-label" htmlFor="address">
+                Location Details
               </label>
-              <input
-                id="shortName"
-                name="shortName"
+              <textarea
+                id="address"
+                name="address"
                 className="form-input"
-                value={formData.shortName}
+                rows={2}
+                value={formData.address}
                 onChange={handleChange}
-                placeholder="e.g., UCSF, Kaiser"
+                placeholder="e.g., Building B, Floor 2"
               />
             </div>
 
@@ -367,10 +364,10 @@ export default function Organizations() {
           <AlertDialog.Overlay className="alert-dialog-overlay" />
           <AlertDialog.Content className="alert-dialog-content">
             <AlertDialog.Title className="alert-dialog-title">
-              Delete Organization?
+              Delete Room?
             </AlertDialog.Title>
             <AlertDialog.Description className="alert-dialog-description">
-              This will delete all sites, rooms, equipment, and events for "{deleteTarget?.name}".
+              This will delete all equipment and events for "{deleteTarget?.name}".
               This action cannot be undone.
             </AlertDialog.Description>
             <div className="alert-dialog-actions">

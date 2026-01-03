@@ -2,7 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 import type {
   Organization,
   Site,
-  Location,
+  Room,
   Equipment,
   SupportEvent,
   GalleryImage,
@@ -12,7 +12,7 @@ import type {
 class MRIPhysicsDB extends Dexie {
   organizations!: EntityTable<Organization, 'id'>;
   sites!: EntityTable<Site, 'id'>;
-  locations!: EntityTable<Location, 'id'>;
+  rooms!: EntityTable<Room, 'id'>;
   equipment!: EntityTable<Equipment, 'id'>;
   events!: EntityTable<SupportEvent, 'id'>;
   images!: EntityTable<GalleryImage, 'id'>;
@@ -21,6 +21,7 @@ class MRIPhysicsDB extends Dexie {
   constructor() {
     super('MRIPhysicsDB');
 
+    // Version 1: Original schema (locations only)
     this.version(1).stores({
       locations: 'id, name, createdAt',
       equipment: 'id, locationId, name, manufacturer, model, status, createdAt',
@@ -29,6 +30,7 @@ class MRIPhysicsDB extends Dexie {
       timelines: 'id, eventId, createdAt',
     });
 
+    // Version 2: Added organizations and sites
     this.version(2).stores({
       organizations: 'id, name, createdAt',
       sites: 'id, organizationId, name, createdAt',
@@ -38,17 +40,59 @@ class MRIPhysicsDB extends Dexie {
       images: 'id, eventId, equipmentId, locationId, capturedAt, *tags',
       timelines: 'id, eventId, createdAt',
     });
+
+    // Version 3: Rename locations -> rooms, locationId -> roomId
+    this.version(3).stores({
+      organizations: 'id, name, createdAt',
+      sites: 'id, organizationId, name, createdAt',
+      rooms: 'id, siteId, name, createdAt',
+      locations: null, // Delete old table
+      equipment: 'id, roomId, type, name, manufacturer, model, status, createdAt',
+      events: 'id, equipmentId, roomId, type, status, scheduledDate, createdAt',
+      images: 'id, eventId, equipmentId, roomId, capturedAt, *tags',
+      timelines: 'id, eventId, createdAt',
+    }).upgrade(async tx => {
+      // Migrate locations -> rooms
+      const locations = await tx.table('locations').toArray();
+      if (locations.length > 0) {
+        await tx.table('rooms').bulkAdd(locations);
+      }
+
+      // Migrate equipment: locationId -> roomId
+      await tx.table('equipment').toCollection().modify(item => {
+        if ('locationId' in item) {
+          item.roomId = item.locationId;
+          delete item.locationId;
+        }
+      });
+
+      // Migrate events: locationId -> roomId
+      await tx.table('events').toCollection().modify(item => {
+        if ('locationId' in item) {
+          item.roomId = item.locationId;
+          delete item.locationId;
+        }
+      });
+
+      // Migrate images: locationId -> roomId
+      await tx.table('images').toCollection().modify(item => {
+        if ('locationId' in item) {
+          item.roomId = item.locationId;
+          delete item.locationId;
+        }
+      });
+    });
   }
 }
 
 export const db = new MRIPhysicsDB();
 
 // Helper functions for common operations
-export async function getLocationWithEquipment(locationId: string) {
-  const location = await db.locations.get(locationId);
-  if (!location) return null;
-  const equipment = await db.equipment.where('locationId').equals(locationId).toArray();
-  return { location, equipment };
+export async function getRoomWithEquipment(roomId: string) {
+  const room = await db.rooms.get(roomId);
+  if (!room) return null;
+  const equipment = await db.equipment.where('roomId').equals(roomId).toArray();
+  return { room, equipment };
 }
 
 export async function getEquipmentWithEvents(equipmentId: string) {
@@ -80,9 +124,9 @@ export async function getOrganizationWithSites(organizationId: string) {
   return { organization, sites };
 }
 
-export async function getSiteWithLocations(siteId: string) {
+export async function getSiteWithRooms(siteId: string) {
   const site = await db.sites.get(siteId);
   if (!site) return null;
-  const locations = await db.locations.where('siteId').equals(siteId).toArray();
-  return { site, locations };
+  const rooms = await db.rooms.where('siteId').equals(siteId).toArray();
+  return { site, rooms };
 }

@@ -3,6 +3,7 @@
 export interface Organization {
   id: string;
   name: string;
+  shortName?: string;  // For display in drill-down lists
   contactName?: string;
   contactPhone?: string;
   contactEmail?: string;
@@ -24,9 +25,9 @@ export interface Site {
   updatedAt: Date;
 }
 
-export interface Location {
-  siteId?: string;
+export interface Room {
   id: string;
+  siteId: string;
   name: string;
   address?: string;
   contactName?: string;
@@ -41,7 +42,7 @@ export type EquipmentType = 'mri_scanner' | 'coil' | 'phantom' | 'workstation' |
 
 export interface Equipment {
   id: string;
-  locationId: string;
+  roomId: string;
   type: EquipmentType;
   name: string;
   manufacturer: string;
@@ -75,7 +76,7 @@ export type EventStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled
 export interface SupportEvent {
   id: string;
   equipmentId: string;
-  locationId: string;
+  roomId: string;
   type: EventType;
   status: EventStatus;
   title: string;
@@ -94,7 +95,7 @@ export interface GalleryImage {
   id: string;
   eventId?: string;
   equipmentId?: string;
-  locationId?: string;
+  roomId?: string;
   filename: string;
   mimeType: string;
   blob: Blob;
@@ -118,7 +119,7 @@ export interface Timeline {
 // Form types
 export type OrganizationFormData = Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>;
 export type SiteFormData = Omit<Site, 'id' | 'createdAt' | 'updatedAt'>;
-export type LocationFormData = Omit<Location, 'id' | 'createdAt' | 'updatedAt'>;
+export type RoomFormData = Omit<Room, 'id' | 'createdAt' | 'updatedAt'>;
 export type EquipmentFormData = Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>;
 export type SupportEventFormData = Omit<SupportEvent, 'id' | 'createdAt' | 'updatedAt'>;
 
