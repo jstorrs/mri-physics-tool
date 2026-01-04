@@ -57,6 +57,32 @@ Organization → Site → Room → Equipment → Events → Images
 - **Events**: Service events (ACR tests, QC checks, repairs, etc.)
 - **Images**: Photos linked to events/equipment/rooms
 
+## Testing on Mobile Devices
+
+Camera access and PWA features require a "secure context" (HTTPS or localhost). To test on a physical Android device during development:
+
+### Chrome USB Port Forwarding (Recommended)
+
+This makes your phone access `localhost` through a USB tunnel to your dev machine:
+
+1. **On your phone**: Settings → Developer options → Enable USB debugging
+2. **Connect phone to computer via USB**
+3. **Start the dev server**: `make dev`
+4. **On desktop Chrome**: Navigate to `chrome://inspect#devices`
+5. **Enable port forwarding**: Click "Port forwarding", add rule: `5173` → `localhost:5173`
+6. **On phone Chrome**: Visit `http://localhost:5173/mri-physics-tool`
+
+Your phone now treats the connection as localhost, enabling camera access and service worker registration without HTTPS certificates.
+
+### Alternative: ngrok
+
+For quick testing without USB:
+
+```bash
+npx ngrok http 5173
+# Opens an https://xxx.ngrok.io URL you can access from any device
+```
+
 ## Deployment
 
 Pushes to `main` automatically deploy to GitHub Pages via GitHub Actions.
