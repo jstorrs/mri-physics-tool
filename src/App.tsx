@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Organizations from './pages/Organizations';
 import Sites from './pages/Sites';
 import Rooms from './pages/Rooms';
+import RoomDetail from './pages/RoomDetail';
 import Events from './pages/Events';
 import Export from './pages/Export';
 
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Organizations />} />
           <Route path="/organizations/:orgId/sites" element={<Sites />} />
           <Route path="/organizations/:orgId/sites/:siteId/rooms" element={<Rooms />} />
+          <Route path="/organizations/:orgId/sites/:siteId/rooms/:roomId" element={<RoomDetail />} />
 
           {/* Other pages - to be rebuilt */}
           <Route path="/events" element={<Events />} />

@@ -356,6 +356,48 @@ ul, ol {
   color: var(--color-bg);
 }
 
+/* --- Room Detail --- */
+.room-info {
+  padding: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-bg-alt);
+}
+
+.room-info__detail {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-2);
+}
+
+.room-info__detail:last-child {
+  margin-bottom: 0;
+}
+
+.room-section {
+  padding: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.room-section__title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.room-section__empty {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.drill-item__meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-left: var(--space-2);
+}
+
 /* --- Utilities --- */
 .visually-hidden {
   position: absolute;

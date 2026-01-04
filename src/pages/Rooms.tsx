@@ -91,9 +91,7 @@ export default function Rooms() {
 
   const handleItemClick = (room: Room) => {
     if (contextMenuRoom) return;
-    // TODO: Navigate to room detail / equipment list
-    // navigate(`/organizations/${orgId}/sites/${siteId}/rooms/${room.id}`);
-    console.log('Room clicked:', room.name);
+    navigate(`/organizations/${orgId}/sites/${siteId}/rooms/${room.id}`);
   };
 
   // Dialog handlers

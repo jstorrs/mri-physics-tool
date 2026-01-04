@@ -24,9 +24,9 @@ make help        # Show all available targets
 
 - **React 19** with TypeScript
 - **Vite** for build tooling
-- **Material-UI (MUI)** for components and theming
+- **MUI + Radix UI** for components (MUI base, Radix for dialogs/menus)
 - **Dexie** for IndexedDB with reactive queries via `useLiveQuery`
-- **React Router** for navigation
+- **React Router** for navigation with nested routes
 - **Vite PWA Plugin** for offline support
 
 ## Architecture
@@ -34,20 +34,19 @@ make help        # Show all available targets
 ### Data Hierarchy
 
 ```
-Organization → Site → Location → Equipment → Events → Images
+Organization → Site → Room → Equipment → Events → Images
 ```
 
 - **Organization**: Hospital networks (top level)
 - **Site**: Individual hospitals/buildings
-- **Location**: Scanner rooms (one MRI scanner per location)
+- **Room**: Scanner rooms (one MRI scanner per room)
 - **Equipment**: MRI scanners, coils, phantoms, workstations
 - **Events**: Service events (ACR tests, QC checks, repairs, etc.)
-- **Images**: Photos linked to events/equipment/locations
+- **Images**: Photos linked to events/equipment/rooms
 
 ### Key Directories
 
 - `src/pages/` - Page components (one per route)
-- `src/components/layout/` - AppLayout with navigation drawer
 - `src/db/index.ts` - Dexie database schema and helper functions
 - `src/types/index.ts` - TypeScript interfaces for all entities
 
@@ -57,19 +56,19 @@ All data access uses Dexie with reactive hooks:
 
 ```typescript
 // Reactive query - UI auto-updates when data changes
-const items = useLiveQuery(() => db.locations.orderBy('name').toArray());
+const items = useLiveQuery(() => db.rooms.orderBy('name').toArray());
 
 // Filtered query with dependency
 const equipment = useLiveQuery(
-  () => locationId
-    ? db.equipment.where('locationId').equals(locationId).toArray()
+  () => roomId
+    ? db.equipment.where('roomId').equals(roomId).toArray()
     : Promise.resolve([]),
-  [locationId]
+  [roomId]
 );
 ```
 
 Helper functions in `src/db/index.ts`:
-- `getOrganizationWithSites()`, `getSiteWithLocations()`, `getLocationWithEquipment()`
+- `getOrganizationWithSites()`, `getSiteWithRooms()`, `getRoomWithEquipment()`
 - `getEquipmentWithEvents()`, `getEventWithImages()`, `getImagesForTimeline()`
 
 ### Page Component Pattern
@@ -82,21 +81,21 @@ Pages follow a consistent CRUD pattern:
 5. Dialog for add/edit form
 6. Confirmation dialog for delete
 
-### URL Query Parameters
+### URL Routes
 
-Pages accept filter parameters:
-- `/sites?organization=<id>` - Filter sites by organization
-- `/locations?site=<id>` - Filter locations by site
-- `/equipment?location=<id>` - Filter equipment by location
-- `/events?equipment=<id>` - Filter events by equipment
-- `/gallery?event=<id>` - Filter images by event
+Nested routes for drill-down navigation:
+- `/` - Organizations list
+- `/organizations/:orgId/sites` - Sites for an organization
+- `/organizations/:orgId/sites/:siteId/rooms` - Rooms for a site
+- `/events` - Events list
+- `/export` - Data export
 
 ### Form Data Types
 
 Each entity has a corresponding form type that omits auto-generated fields:
 
 ```typescript
-type LocationFormData = Omit<Location, 'id' | 'createdAt' | 'updatedAt'>;
+type RoomFormData = Omit<Room, 'id' | 'createdAt' | 'updatedAt'>;
 ```
 
 ## PWA Configuration
