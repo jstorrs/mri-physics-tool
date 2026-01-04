@@ -219,8 +219,23 @@ ul, ol {
   padding: var(--space-6);
   width: min(90vw, 400px);
   max-height: 85vh;
+  max-height: 85dvh; /* Dynamic viewport height - accounts for mobile keyboard */
   overflow-y: auto;
   z-index: 101;
+}
+
+/* Mobile: anchor dialog to top to avoid keyboard overlap */
+@media (max-width: 600px) {
+  .dialog-content {
+    top: var(--space-4);
+    left: var(--space-4);
+    right: var(--space-4);
+    bottom: auto;
+    transform: none;
+    width: auto;
+    max-height: calc(100vh - var(--space-8));
+    max-height: calc(100dvh - var(--space-8));
+  }
 }
 
 .dialog-title {
@@ -301,6 +316,17 @@ ul, ol {
   padding: var(--space-6);
   width: min(90vw, 400px);
   z-index: 101;
+}
+
+/* Mobile: anchor alert dialog to top */
+@media (max-width: 600px) {
+  .alert-dialog-content {
+    top: var(--space-4);
+    left: var(--space-4);
+    right: var(--space-4);
+    transform: none;
+    width: auto;
+  }
 }
 
 .alert-dialog-title {
