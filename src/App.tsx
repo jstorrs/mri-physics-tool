@@ -5,6 +5,7 @@ import Rooms from './pages/Rooms';
 import RoomDetail from './pages/RoomDetail';
 import Events from './pages/Events';
 import Export from './pages/Export';
+import Camera from './pages/Camera';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           {/* Other pages - to be rebuilt */}
           <Route path="/events" element={<Events />} />
           <Route path="/export" element={<Export />} />
+          <Route path="/camera" element={<Camera />} />
         </Routes>
       </div>
     </BrowserRouter>
